@@ -4,6 +4,11 @@
 * [Next.js 13](#nextjs-13)
   * [App Router 初期ファイル](#app-router-初期ファイル)
   * [Google Fonts](#google-fonts)
+  * [fetch cache option](#fetch-cache-option)
+  * [loading と error の表示](#loading-と-error-の表示)
+    * [コンポーネント単位での表示](#コンポーネント単位での表示)
+  * [Server component and Client component](#server-component-and-client-component)
+  * [データの再取得](#データの再取得)
 <!-- TOC -->
 
 ## App Router 初期ファイル
@@ -73,6 +78,168 @@ export default function RootLayout({
     <html lang="en">
       <body className={MontserratFont.className}>{children}</body>
     </html>
+  )
+}
+```
+
+## fetch cache option
+fetch関数のcacheオプションを変更することで、ssgやssr等に変更できる。
+
+```ts
+
+// build時に取得したデータ(default)
+// Similar to getStaticProps
+fetch(URL, {cache: 'force-cache'})
+
+// ダイナミックにデータを取得する場合
+// Similar to getServerSideProps
+fetch(URL, {cache: 'no-cache'})
+
+// データを取得してから10秒間はキャッシュを使用する
+// ISR
+fetch(URL, {next: { revalidate: 10} })
+
+```
+
+## loading と error の表示
+page.tsxと同じ階層に、loading.tsxとerror.tsxを作成する。
+
+loading.tsx
+
+```tsx
+import Spinner from '@/app/components/spinner'
+
+export default function Loading() {
+  return <Spinner />
+}
+
+```
+spinner.tsx
+
+```tsx
+export default function Spinner({
+  color = 'border-blue-500',
+}: {
+  color?: string
+}) {
+  {
+    return (
+      <div className="my-16 flex justify-center">
+        <div
+          className={`h-10 w-10 animate-spin rounded-full border-4 ${color} border-t-transparent`}
+        />
+      </div>
+    )
+  }
+}
+```
+
+error.tsx
+
+```tsx
+'use client'
+
+export default function Error({ error }: { error: Error }) {
+  return (
+    <div>
+      <p className="mt-6 text-center text-red-500">
+        Data fetching in server failed.
+        <br />
+        Error: {error.message}
+      </p>
+    </div>
+  )
+}
+
+```
+
+### コンポーネント単位での表示
+page.tsx
+
+```tsx
+import NotesList from '@/app/components/notes-lits'
+import TimerCounter from '@/app/components/timer-counter'
+import { Suspense } from 'react'
+import Spinner from '@/app/components/spinner'
+
+export default function Page() {
+  return (
+    <main>
+      <div className="m-10 text-center">
+        Hello Next.js 13
+        <Suspense fallback={<Spinner color="border-green-500" />}>
+          <NotesList />
+        </Suspense>
+        <TimerCounter />
+      </div>
+    </main>
+  )
+}
+```
+
+## Server component and Client component
+- Server component
+  - サーバーでレンダリングされる（jsはclientに送られない）
+  - Data fetchにasync functionを使用できる
+  - Secure keyを使用可能
+  - BrowserのAPIを使用できない
+  - useState, useEffectを使用できない
+  - Event handlerを使用できない
+- Client component
+  - jsはclientに送られる
+  - Data fetchにasync functionを使用できない
+    - useEffect, React-query等を使用する
+  - Secure keyを使用できない
+  - BrowserのAPIを使用できる
+  - useState, useEffectを使用できる
+  - Event handlerを使用できる
+
+## データの再取得
+データの再取得には、useRouterを使用する。useRouterはclient componentでのみ使用できる。<br />
+useStateの値はリセットされない。
+
+refresh-button.tsx
+
+```tsx
+'use client'
+import { useRouter } from 'next/navigation'
+
+export default function RefreshButton() {
+  const router = useRouter()
+  return (
+    <button
+      className="rounded bg-indigo-600 px-3 py-1 font-medium text-white hover:bg-indigo-700"
+      onClick={() => {
+        router.refresh()
+      }}
+    >
+      Refresh current route
+    </button>
+  )
+}
+```
+
+page.tsx
+
+```tsx
+import NotesList from '@/app/components/notes-lits'
+import TimerCounter from '@/app/components/timer-counter'
+import { Suspense } from 'react'
+import Spinner from '@/app/components/spinner'
+import RefreshButton from '@/app/components/refresh-button'
+
+export default function Page() {
+  return (
+    <main>
+      <div className="m-10 text-center">
+        Hello Next.js 13
+        <Suspense fallback={<Spinner color="border-green-500" />}>
+          <NotesList />
+        </Suspense>
+        <TimerCounter />
+        <RefreshButton />
+      </div>
+    </main>
   )
 }
 ```
