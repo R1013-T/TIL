@@ -13,7 +13,11 @@
   * [配列](#配列)
     * [スライス](#スライス)
     * [map](#map)
-  * [struct](#struct)
+  * [struct(構造体)](#struct構造体)
+  * [receiver](#receiver)
+  * [function](#function)
+    * [defer](#defer)
+    * [無名関数](#無名関数)
 <!-- TOC -->
 
 ## module・package
